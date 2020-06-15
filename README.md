@@ -1,0 +1,7 @@
+# mysh
+
+usage:
+```
+make
+./mysh
+```

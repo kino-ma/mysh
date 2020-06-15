@@ -1,5 +1,11 @@
+OBJS := main.o
+
 default: mysh
 
-mysh: mysh.o
+mysh: $(OBJS)
+	$(CC) -o mysh $(OBJS)
 
-.PHONY: default
+clean:
+	rm -rf mysh *.o $(OBJS)
+
+.PHONY: default clean

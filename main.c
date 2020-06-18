@@ -244,7 +244,7 @@ int main() {
     token *cmd_head;
 
     while (1) {
-        printf("$ ");
+        fprintf(stderr, "$ ");
 
         cmd_head = get_cmd();
 

@@ -28,6 +28,7 @@ token *add_token(token *, char *, int, enum token_type);
 token *tokenize(char *);
 void exec_cmd(token *);
 void exec_cmd_pipe(token *prev, token *next);
+void terminate(token *heod);
 
 
 
@@ -47,11 +48,13 @@ token *add_token(token *cur, char *str, int d, enum token_type type) {
 token *tokenize(char *str) {
     int cnt = 0;
 
+    if (strcmp("\n", str) == 0) {
+        return NULL;
+    }
+
     token *head, *cur;
     head = cur = malloc(sizeof(token));
 
-    /* TODO: implement sinple and double quotes
-     */
     for (int i, j = i = 0; i < strlen(str); j++) {
         enum token_type type = WORD;
 
@@ -112,11 +115,6 @@ token *get_cmd() {
     }
 
     token *head = tokenize(input);
-
-    if (head == NULL) {
-        fprintf(stderr, "failed to tokenize\n");
-        exit(1);
-    }
 
     return head;
 }
@@ -179,15 +177,6 @@ void exec_cmd(token *head) {
             argc++;
         }
 
-        /* TODO: implement HEREDOC, and HERESTR */
-
-        // heredoc
-        if (cur->type == HERESTR) {
-        }
-        // herestr
-        if (cur->type == HERESTR) {
-        }
-
         // redirect
         if (cur->type == REDIRECT_OR || cur->type == REDIRECT_ADD) {
             int opt;
@@ -226,16 +215,18 @@ void exec_cmd(token *head) {
 
     args[argc] = NULL;
 
-    /*
-    fprintf(stderr, "(parent)args:\n");
-    for (int i = 0; i < argc; i++) {
-        fprintf(stderr, "  args[%d]: '%s'\n", i, args[i]);
-    }
-    fprintf(stderr, "\n  -- out --  \n");
-    */
-
     execvp(args[0], args);
 }
+
+void terminate(token *head) {
+    token *cur, *next;
+    for (cur = head; cur != NULL; cur = next) {
+        next = cur->next;
+        free(cur->word);
+        free(cur);
+    }
+}
+
 
 
 int main() {
@@ -247,6 +238,10 @@ int main() {
         fprintf(stderr, "$ ");
 
         cmd_head = get_cmd();
+
+        if (cmd_head == NULL) {
+            continue;
+        }
 
         child_pid = fork();
 
@@ -265,6 +260,7 @@ int main() {
                 printf("status: %d\n", WTERMSIG(status));
             }
 
+            terminate(cmd_head);
         } else {
             int pgid = setpgid(0, 0);
             // child

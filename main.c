@@ -11,7 +11,7 @@ enum token_type {
     READ_FILE,
     HEREDOC,
     HERESTR,
-    REDIRECT_OR,
+    REDIRECT_OW,
     REDIRECT_ADD,
     PIPE,
 };
@@ -46,27 +46,27 @@ token *add_token(token *cur, char *str, int d, enum token_type type) {
 }
 
 token *tokenize(char *str) {
-    int cnt = 0;
-
     if (strcmp("\n", str) == 0) {
         return NULL;
     }
 
     token *head, *cur;
-    head = cur = malloc(sizeof(token));
+    cur = head = malloc(sizeof(token));
+
+    char *s = index(str, '\n');
+    *s = '\0';
 
     for (int i, j = i = 0; i < strlen(str); j++) {
         enum token_type type = WORD;
 
-        // skip token delims
-        while (str[i] == ' ' || str[i] == '\n') {
+        // skip spaces
+        while (str[i] == ' ' || str[i] == '\0') {
             i++, j++;
         }
 
         switch (str[i]) {
-            // token delim
             case '>':
-                type = REDIRECT_OR;
+                type = REDIRECT_OW;
                 if (str[i+1] == '>') {
                     type = REDIRECT_ADD;
                     j = i + 1;
@@ -74,10 +74,10 @@ token *tokenize(char *str) {
                 break;
             case '<':
                 type = READ_FILE;
-                if (str[i+1] == '>') {
+                if (str[i+1] == '<') {
                     type = HEREDOC;
                     j = i + 1;
-                    if (str[i+2] == '>') {
+                    if (str[i+2] == '<') {
                         type = HERESTR;
                         j = i + 2;
                     }
@@ -89,7 +89,7 @@ token *tokenize(char *str) {
                 break;
             default:
                 type = WORD;
-                while (index("<>| \n", str[j]) == NULL) {
+                while (index("<>| \0", str[j]) == NULL) {
                     j++;
                 }
                 break;
@@ -97,7 +97,7 @@ token *tokenize(char *str) {
 
         cur = add_token(cur, str + i, j - i, type);
 
-        i = ++j, cnt++;
+        i = ++j;
     }
 
     return head;
@@ -178,11 +178,11 @@ void exec_cmd(token *head) {
         }
 
         // redirect
-        if (cur->type == REDIRECT_OR || cur->type == REDIRECT_ADD) {
+        if (cur->type == REDIRECT_OW || cur->type == REDIRECT_ADD) {
             int opt;
             opt = O_WRONLY | O_CREAT;
 
-            if (cur->type == REDIRECT_OR) {
+            if (cur->type == REDIRECT_OW) {
                 opt |= O_TRUNC;
             } else if (cur->type == REDIRECT_ADD) {
                 opt |= O_APPEND;
@@ -192,7 +192,7 @@ void exec_cmd(token *head) {
             char *filename = cur->word;
             int fd = open(filename, opt);
 
-            if (fd < -1) {
+            if (fd < 0) {
                 fprintf(stderr, "failed to open file: %s\n", filename);
                 fprintf(stderr, "%s\n", strerror(errno));
                 exit(1);
@@ -216,11 +216,15 @@ void exec_cmd(token *head) {
     args[argc] = NULL;
 
     execvp(args[0], args);
+
+    // if returned
+    fprintf(stderr, "exec %s failed\n", head->word);
+    perror("exec");
 }
 
 void terminate(token *head) {
     token *cur, *next;
-    for (cur = head; cur != NULL; cur = next) {
+    for (cur = head; cur->next != NULL; cur = next) {
         next = cur->next;
         free(cur->word);
         free(cur);
@@ -266,9 +270,6 @@ int main() {
             // child
             exec_cmd(cmd_head);
 
-            // if returned
-            fprintf(stderr, "failed to exec\n");
-            return 1;
         }
 
     }

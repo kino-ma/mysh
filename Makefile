@@ -6,6 +6,6 @@ mysh: $(OBJS)
 	$(CC) -o mysh $(OBJS)
 
 clean:
-	rm -rf mysh *.o $(OBJS)
+	rm -rf mysh *.o *.test $(OBJS)
 
 .PHONY: default clean

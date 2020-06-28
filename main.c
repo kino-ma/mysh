@@ -86,13 +86,13 @@ void exec_cmd(token *head) {
     }
 
     for (token *cur = start; cur != NULL; cur = cur->next) {
-        // normal token
+        /* normal token */
         if (cur->type == WORD) {
             args[argc] = cur->word;
             argc++;
         }
 
-        // redirect
+        /* redirect */
         if (cur->type == REDIRECT_OW || cur->type == REDIRECT_ADD) {
             int opt;
             opt = O_WRONLY | O_CREAT;
@@ -119,7 +119,7 @@ void exec_cmd(token *head) {
             continue;
         }
 
-        // pipe
+        /* pipe */
         if (cur->type == PIPE) {
             token *next = cur->next;
             cur = cur->prev;
@@ -159,10 +159,11 @@ void exec_cmd_pipe(token *prev, token *next) {
         // close pipe (write)
         close(fds[1]);
 
-        // move pipe (read) to stdin and close original one
+        // move pipe (read) to stdin and close
         dup2(fds[0], 0);
         close(fds[0]);
 
+        // wait child
         waitpid(pid, NULL, 0);
 
         // exec
@@ -175,7 +176,7 @@ void exec_cmd_pipe(token *prev, token *next) {
         // close pipe (read)
         close(fds[0]);
 
-        // move pipe (write) to stdout and close original one
+        // move pipe (write) to stdout and close
         dup2(fds[1], 1);
         close(fds[1]);
 

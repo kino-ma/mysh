@@ -2,6 +2,6 @@
 
 usage:
 ```
-make
-./mysh
+$ make
+$ ./mysh
 ```

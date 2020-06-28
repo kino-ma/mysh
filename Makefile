@@ -1,4 +1,4 @@
-OBJS := main.o
+OBJS := main.o token.o
 
 default: mysh
 
